@@ -211,6 +211,8 @@ workspace {
             
             messageService -> messageService "Внутренние операции (загрузка сообщений, обновление статусов)" "Internal"
             
+            chatService -> chatService "Внутренние операции (добавление пользователей в чат)" "Internal"
+            
             // Связи между компонентами
             chatService.groupChatComponent -> chatService.chatDatabase "Читает и записывает данные чатов"
 
@@ -376,6 +378,25 @@ workspace {
             messengerSystem.apiGateway -> messengerSystem.messageService "Перенаправляет запрос"
             messengerSystem.messageService -> messengerSystem.messageService "Обрабатывает подтверждение прочтения"
             messengerSystem.messageService -> messengerSystem.messageService "Обновляет статус в базе данных и кэше"
+            autoLayout lr
+        }
+
+        dynamic messengerSystem "UC10_AddUserToChat" "Добавление пользователя в чат" {
+            user -> messengerSystem.webApp "Добавляет пользователя в чат"
+            messengerSystem.webApp -> messengerSystem.apiGateway "POST /api/chats/{id}/users"
+            messengerSystem.apiGateway -> messengerSystem.chatService "Перенаправляет запрос"
+            messengerSystem.chatService -> messengerSystem.userService "Проверяет существование пользователя"
+            messengerSystem.chatService -> messengerSystem.chatService "Добавляет пользователя в чат"
+            autoLayout lr
+        }
+
+        dynamic messengerSystem "UC11_GetPtPMessages" "Получение списка личных сообщений" {
+            user -> messengerSystem.webApp "Открывает личный чат"
+            messengerSystem.webApp -> messengerSystem.apiGateway "GET /api/messages/direct/{userId}"
+            messengerSystem.apiGateway -> messengerSystem.messageService "Перенаправляет запрос"
+            messengerSystem.messageService -> messengerSystem.userService "Проверяет существование пользователя"
+            messengerSystem.messageService -> messengerSystem.messageService "Загружает личные сообщения"
+            messengerSystem.messageService -> messengerSystem.messageService "Обновляет статусы прочтения"
             autoLayout lr
         }
     }
