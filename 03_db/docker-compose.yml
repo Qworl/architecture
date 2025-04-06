@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  pg:
+    container_name: lab03_postgres
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=stud
+      - POSTGRES_PASSWORD=stud
+      - PGPORT=6432
+      - PGDATA=/data/postgres
+      - POSTGRES_DB=archdb
+    volumes:
+      - pg_db:/data/postgres
+      - ./users_service/db/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "6432:6432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d archdb -U stud -p 6432" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - api-network
+
+  user-service:
+    container_name: lab03_user_service
+    build:
+      context: ./users_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./users_service:/app
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=pg
+      - DB_PORT=6432
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+      - DB_DATABASE=archdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      pg:
+        condition: service_healthy
+    networks:
+      - api-network
+
+  message-service:
+    container_name: lab03_message_service
+    build:
+      context: ./messages_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./messages_service:/app
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - api-network
+
+volumes:
+  pg_db:
+    name: pg_db_arch03
+    driver: local
+
+networks:
+  api-network:
+    driver: bridge
