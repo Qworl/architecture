@@ -107,6 +107,6 @@ curl -X GET "http://localhost:8001/messages/search?query=текст" \
 ## Зависимости
 
 - FastAPI
-- Motor (асинхронный драйвер MongoDB)
+- Pymongo
 - Python-Jose (JWT токены)
 - Uvicorn (ASGI сервер) 
