@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  pg:
+    container_name: lab04_postgres
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=stud
+      - POSTGRES_PASSWORD=stud
+      - PGPORT=6432
+      - PGDATA=/data/postgres
+      - POSTGRES_DB=archdb
+    volumes:
+      - pg_db:/data/postgres
+      - ./users_service/db/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "6432:6432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d archdb -U stud -p 6432" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - api-network
+
+  mongo-db:
+    container_name: lab04_mongo-db
+    image: mongo:5
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./messages_service/db/migrations/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - api-network
+
+  user-service:
+    container_name: lab04_user_service
+    build:
+      context: ./users_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./users_service:/app
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=pg
+      - DB_PORT=6432
+      - DB_LOGIN=stud
+      - DB_PASSWORD=stud
+      - DB_DATABASE=archdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      pg:
+        condition: service_healthy
+    networks:
+      - api-network
+
+  message-service:
+    container_name: lab04_message_service
+    build:
+      context: ./messages_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./messages_service:/app
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MONGO_URI=mongodb://mongo-db:27017/messages_db
+      - MONGO_DB_NAME=messages_db
+      - MONGO_COLLECTION=messages
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+    networks:
+      - api-network
+
+volumes:
+  pg_db:
+    name: pg_db_arch04
+    driver: local
+  mongodb_data:
+
+networks:
+  api-network:
+    driver: bridge
