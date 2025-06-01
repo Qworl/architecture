@@ -1,0 +1,8 @@
+Running 10s test @ http://0.0.0.0:8000/users/details?user_id=1
+  1 threads and 1 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.57ms  179.34us   8.00ms   90.65%
+    Req/Sec   390.63     16.62   414.00     75.00%
+  3892 requests in 10.01s, 840.09KB read
+Requests/sec:    388.93
+Transfer/sec:     83.95KB
