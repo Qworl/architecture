@@ -7,14 +7,12 @@ import fastapi
 
 from models.user import User
 
-# Константы
 REDIS_HOST = os.getenv("REDIS_HOST", "redis-db")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 USER_DETAILS_TTL = 60 * 10  # 10 минут
 USERS_LIST_TTL = 60 * 5  # 5 минут
 
-# Глобальное состояние
 redis_client: tp.Optional[redis.Redis] = None
 
 
